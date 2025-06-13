@@ -1,0 +1,51 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: users_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: nats
+    ports:
+      - '4222:4222'
+
+  users-ms:
+    build:
+      context: ./apps/users
+    container_name: users-ms
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://user:password@postgres:5432/users_db
+      NATS_URL: nats://nats:4222
+    depends_on:
+      - postgres
+      - nats
+    ports:
+      - '3001:3001'
+
+  orders-ms:
+    build:
+      context: ./apps/orders
+    container_name: orders-ms
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://user:password@postgres:5432/orders_db
+      NATS_URL: nats://nats:4222
+    depends_on:
+      - postgres
+      - nats
+    ports:
+      - '3002:3002'
+
+volumes:
+  pgdata: 
